@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to Code Clinic</h1>
+        <p class="lead mb-4">Your journey to mastering coding becomes easier with personalized one-on-one sessions.</p>
+        
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
+                        <h3>Easy Booking</h3>
+                        <p>Book your preferred session seamlessly with our intuitive booking system.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-people display-4 text-primary mb-3"></i>
+                        <h3>Expert Mentors</h3>
+                        <p>Learn from experienced volunteers who are passionate about teaching.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="bi bi-clock-history display-4 text-primary mb-3"></i>
+                        <h3>Flexible Schedule</h3>
+                        <p>Find available time slots that work best for your schedule.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not current_user.is_authenticated %}
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg px-4 gap-3">
+                    <i class="bi bi-person-plus"></i> Register
+                </a>
+            </div>
+        {% else %}
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="bi bi-speedometer2"></i> Go to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+<style>
+    .fc-event {
+        cursor: pointer;
+    }
+    .slot-card {
+        transition: all 0.3s ease;
+    }
+    .slot-card:hover {
+        transform: translateY(-5px);
+    }
+    .volunteer-badge {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Available Sessions</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if current_user.is_volunteer %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSlotModal">
+            <i class="bi bi-plus-circle"></i> Add Volunteer Slot
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div id="calendar"></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Your Bookings</h5>
+                <div id="bookingsList">
+                    <!-- Bookings will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Slot Modal -->
+<div class="modal fade" id="addSlotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Volunteer Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addSlotForm">
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject/Topic</label>
+                        <input type="text" class="form-control" id="subject" required placeholder="e.g., Python, Web Development, Data Structures">
+                    </div>
+                    <div class="mb-3">
+                        <label for="startTime" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="startTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endTime" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="endTime" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSlot">Save Slot</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: '/api/slots',
+        eventClick: function(info) {
+            if (confirm(`Would you like to book this ${info.event.extendedProps.subject} session with ${info.event.extendedProps.volunteer_name}?`)) {
+                bookSlot(info.event.id);
+            }
+        },
+        eventDidMount: function(info) {
+            // Add tooltip with subject and volunteer name
+            info.el.title = `${info.event.extendedProps.subject} with ${info.event.extendedProps.volunteer_name}`;
+        }
+    });
+    calendar.render();
+
+    // Load user's bookings
+    loadBookings();
+
+    // Handle slot booking
+    function bookSlot(slotId) {
+        fetch('/api/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ slot_id: slotId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else {
+                showAlert('Booking successful!', 'success');
+                calendar.refetchEvents();
+                loadBookings();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while booking the slot.', 'danger');
+        });
+    }
+
+    // Load user's bookings
+    function loadBookings() {
+        fetch('/api/bookings')
+        .then(response => response.json())
+        .then(bookings => {
+            const bookingsList = document.getElementById('bookingsList');
+            if (bookings.length === 0) {
+                bookingsList.innerHTML = '<p class="text-muted">No bookings found.</p>';
+                return;
+            }
+            
+            bookingsList.innerHTML = bookings.map(booking => `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h6 class="card-title">${formatDate(booking.start_time)}</h6>
+                        <p class="card-text">
+                            <span class="badge bg-primary mb-2">${booking.subject}</span>
+                            <br>
+                            <span class="volunteer-badge">
+                                <i class="bi bi-person"></i> ${booking.volunteer_name}
+                            </span>
+                        </p>
+                        <button class="btn btn-danger btn-sm" onclick="cancelBooking(${booking.id})">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while loading bookings.', 'danger');
+        });
+    }
+
+    // Handle adding volunteer slots
+    document.getElementById('saveSlot').addEventListener('click', function() {
+        const subject = document.getElementById('subject').value;
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+
+        if (!subject || !startTime || !endTime) {
+            showAlert('Please fill in all fields', 'danger');
+            return;
+        }
+
+        fetch('/api/volunteer/slots', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                subject: subject,
+                start_time: startTime,
+                end_time: endTime
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else {
+                showAlert('Slot added successfully!', 'success');
+                calendar.refetchEvents();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addSlotModal'));
+                modal.hide();
+                // Clear the form
+                document.getElementById('addSlotForm').reset();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while adding the slot.', 'danger');
+        });
+    });
+});
+
+// Cancel booking function
+function cancelBooking(bookingId) {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+        fetch(`/api/bookings/${bookingId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else {
+                showAlert('Booking cancelled successfully!', 'success');
+                loadBookings();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while cancelling the booking.', 'danger');
+        });
+    }
+}
+</script>
+{% endblock %} 
