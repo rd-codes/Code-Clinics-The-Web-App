@@ -2,6 +2,10 @@
 
 A modern web application for managing code clinic sessions, allowing students to book one-on-one coding sessions with volunteers. The application features a clean, intuitive interface and seamless integration with Google Calendar.
 
+
+https://github.com/user-attachments/assets/e6fba014-ebfc-48f6-9331-a8808a7330a8
+
+
 ## Features
 
 ### User Management
