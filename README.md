@@ -52,8 +52,8 @@ https://github.com/user-attachments/assets/e6fba014-ebfc-48f6-9331-a8808a7330a8
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd code-clinics-cpt-06-main
+git clone github.com/rd-codes/Code-Clinics-The-Web-App/
+cd Code-Clinics-The-Web-App
 ```
 
 2. Create a virtual environment and activate it:
@@ -117,7 +117,7 @@ python app.py
 ## Project Structure
 
 ```
-code-clinics-cpt-06-main/
+code-clinics-the-web-app/
 ├── app.py                  # Main Flask application
 ├── requirements.txt        # Python dependencies
 ├── credentials.json        # Google Calendar API credentials
